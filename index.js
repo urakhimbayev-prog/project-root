@@ -11,23 +11,34 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Cookie fix for iframe + HTTPS
+// -------------------------
+// Cookie session (iframe + HTTPS fix)
+// -------------------------
 app.use(
   cookieSession({
     name: "session",
     keys: ["supersecretkey123"],
     maxAge: 24 * 60 * 60 * 1000,
-    secure: true,
-    sameSite: "none"
+    secure: true,       // обязательно для HTTPS (Railway)
+    sameSite: "none"    // обязательно для iframe (Тильда)
   })
 );
 
+// -------------------------
+// Static files
+// -------------------------
 app.use(express.static(path.join(__dirname, "public")));
 
+// -------------------------
+// File paths
+// -------------------------
 const dataFile = path.join(__dirname, "data", "earthquakes.json");
 const logFile = path.join(__dirname, "data", "logs.json");
 const usersFile = path.join(__dirname, "data", "users.json");
 
+// -------------------------
+// JSON helpers
+// -------------------------
 function readData() {
   return JSON.parse(fs.readFileSync(dataFile));
 }
@@ -59,6 +70,9 @@ function addLog(action, details) {
   writeLogs(logs);
 }
 
+// -------------------------
+// Auth middleware
+// -------------------------
 function checkAuth(req, res, next) {
   if (!req.session.loggedIn) {
     return res.redirect("/login.html");
@@ -66,11 +80,16 @@ function checkAuth(req, res, next) {
   next();
 }
 
+// -------------------------
+// Allow login.html without auth
+// -------------------------
 app.get("/login.html", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// AUTH
+// -------------------------
+// Auth routes
+// -------------------------
 app.post("/auth", (req, res) => {
   const { login, password } = req.body;
   const users = readUsers();
@@ -96,7 +115,9 @@ app.get("/logout", (req, res) => {
   res.redirect("/login.html");
 });
 
-// API with filters
+// -------------------------
+// PRIVATE API (operator)
+// -------------------------
 app.get("/api/earthquakes", checkAuth, (req, res) => {
   let data = readData();
   const now = Date.now();
@@ -181,35 +202,41 @@ app.get("/api/delete/:id", checkAuth, (req, res) => {
   res.redirect("/list.html");
 });
 
-// LOGS
-app.get("/api/logs", checkAuth, (req, res) => {
-  res.json(readLogs());
+// -------------------------
+// PUBLIC API (no auth)
+// -------------------------
+app.get("/api/earthquakes-public", (req, res) => {
+  let data = readData();
+  const now = Date.now();
+
+  // Date range filter
+  const range = req.query.range;
+  if (range === "24h") data = data.filter(r => now - r.id <= 24 * 60 * 60 * 1000);
+  if (range === "7d")  data = data.filter(r => now - r.id <= 7 * 24 * 60 * 60 * 1000);
+  if (range === "30d") data = data.filter(r => now - r.id <= 30 * 24 * 60 * 60 * 1000);
+
+  // Magnitude filter
+  const minMag = parseFloat(req.query.minMag);
+  if (!isNaN(minMag)) {
+    data = data.filter(r => r.magnitude >= minMag);
+  }
+
+  // Sort newest first
+  data = data.sort((a, b) => b.id - a.id);
+
+  res.json(data);
 });
 
-// EXPORT CSV
-app.get("/api/export", checkAuth, (req, res) => {
-  const data = readData();
-
-  let csv = "ID,Дата,Время,Широта,Долгота,Магнитуда,Комментарий\n";
-
-  data.forEach((r) => {
-    csv += `${r.id},${r.date},${r.time},${r.lat},${r.lon},${r.magnitude},"${(r.comment || "").replace(/"/g, '""')}"\n`;
-  });
-
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader(
-    "Content-Disposition",
-    "attachment; filename=earthquakes.csv"
-  );
-
-  res.send("\uFEFF" + csv);
-});
-
-// ROOT
+// -------------------------
+// Root route
+// -------------------------
 app.get("/", (req, res) => {
   res.redirect("/login.html");
 });
 
+// -------------------------
+// Start server
+// -------------------------
 const port = process.env.PORT || 3000;
 app.listen(port, () =>
   console.log("Server running on port", port)
