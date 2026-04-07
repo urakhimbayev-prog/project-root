@@ -163,3 +163,16 @@ h2 {
   color: #d64545;
   font-size: 13px;
 }
+
+.filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.filters select {
+  padding: 6px 8px;
+  border: 1px solid #d9e1e8;
+  border-radius: 4px;
+  font-size: 14px;
+}
