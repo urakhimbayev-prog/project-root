@@ -26,7 +26,9 @@
     </thead>
     <tbody id="rows"></tbody>
   </table>
-
+<br>
+<a href="/api/export" target="_blank">Экспорт в Excel (CSV)</a>
+<br><br>
   <script>
     fetch("/api/earthquakes")
       .then(r => r.json())
