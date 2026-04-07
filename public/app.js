@@ -1,30 +1,43 @@
 async function loadData() {
   const res = await fetch("/api/earthquakes");
   const data = await res.json();
+  renderTable(data);
+  updateMap(data);
+}
 
+async function applyFilters() {
+  const range = document.getElementById("range").value;
+  const minMag = document.getElementById("minMag").value;
+
+  let url = "/api/earthquakes?";
+
+  if (range) url += `range=${range}&`;
+  if (minMag) url += `minMag=${minMag}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  renderTable(data);
+  updateMap(data);
+}
+
+function renderTable(data) {
   const tbody = document.getElementById("table-body");
   tbody.innerHTML = "";
 
-  data
-    .slice()
-    .reverse()
-    .forEach((r) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${r.date || ""}</td>
-        <td>${r.time || ""}</td>
-        <td>${r.magnitude ?? ""}</td>
-        <td>${r.lat ?? ""}</td>
-        <td>${r.lon ?? ""}</td>
-        <td>${r.comment || ""}</td>
-        <td>
-          <a href="/api/delete/${r.id}" class="link-danger" onclick="return confirm('Удалить запись?')">Удалить</a>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-  updateMap(data);
+  data.forEach((r) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.date}</td>
+      <td>${r.time}</td>
+      <td>${r.magnitude}</td>
+      <td>${r.lat}</td>
+      <td>${r.lon}</td>
+      <td>${r.comment}</td>
+      <td><a href="/api/delete/${r.id}" class="link-danger">Удалить</a></td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 let map;
@@ -57,9 +70,9 @@ function updateMap(data) {
       }).addTo(markersLayer);
 
       const text = `
-        <b>${r.date || ""} ${r.time || ""}</b><br/>
-        M: ${r.magnitude ?? ""}<br/>
-        ${r.comment || ""}
+        <b>${r.date} ${r.time}</b><br/>
+        M: ${r.magnitude}<br/>
+        ${r.comment}
       `;
       marker.bindPopup(text);
     }
