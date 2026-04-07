@@ -1,118 +1,72 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Журнал событий</title>
+  <meta charset="UTF-8" />
+  <title>Журнал сейсмособытий</title>
+  <link rel="stylesheet" href="style.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-  <script>
-  if (window.top === window.self) {
-    // Если страница открыта НЕ в iframe — отправляем обратно в iframe
-    window.location.href = "https://project-root-production-6a2f.up.railway.app/login.html";
-  }
-</script>
-  <h2>Журнал событий</h2>
+  <header class="top-bar">
+    <h1>Журнал сейсмособытий</h1>
+    <div>
+      <a href="/api/export" class="btn">Экспорт CSV</a>
+      <a href="/logout" class="btn btn-outline">Выход</a>
+    </div>
+  </header>
 
-  <table border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Дата</th>
-        <th>Время</th>
-        <th>Координаты</th>
-        <th>Магнитуда</th>
-        <th>Действия</th>
-      </tr>
-    </thead>
-    <tbody id="rows"></tbody>
-  </table>
-<br>
-<a href="/api/export" target="_blank">Экспорт в Excel (CSV)</a>
-<br><br>
-  <script>
-    fetch("/api/earthquakes")
-      .then(r => r.json())
-      .then(data => {
-        const rows = document.getElementById("rows");
-        rows.innerHTML = data.map(r => `
+  <main class="layout">
+    <section class="left">
+      <h2>Добавить событие</h2>
+      <form method="POST" action="/api/add" class="form-grid">
+        <label>Дата</label>
+        <input type="date" name="date" required />
+
+        <label>Время</label>
+        <input type="time" name="time" required />
+
+        <label>Магнитуда</label>
+        <input type="number" step="0.1" name="magnitude" required />
+
+        <label>Широта</label>
+        <input type="number" step="0.0001" name="lat" required />
+
+        <label>Долгота</label>
+        <input type="number" step="0.0001" name="lon" required />
+
+        <label>Комментарий</label>
+        <textarea name="comment" rows="2"></textarea>
+
+        <button type="submit" class="btn full">Сохранить</button>
+      </form>
+
+      <h2>Список событий</h2>
+      <table class="data-table">
+        <thead>
           <tr>
-            <td>${r.id}</td>
-            <td>${r.date}</td>
-            <td>${r.time}</td>
-            <td>${r.lat}, ${r.lon}</td>
-            <td>${r.magnitude}</td>
-            <td>
-              <a href="/edit.html?id=${r.id}">Изменить</a> |
-              <a href="/api/delete/${r.id}" onclick="return confirm('Удалить запись?')">Удалить</a>
-            </td>
+            <th>Дата</th>
+            <th>Время</th>
+            <th>M</th>
+            <th>Широта</th>
+            <th>Долгота</th>
+            <th>Комментарий</th>
+            <th></th>
           </tr>
-        `).join("");
-      });
-  </script>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </section>
 
-  <br>
-  <a href="/form.html">Добавить новую запись</a>
-  <br><br>
-  <a href="/logout">Выйти</a>
-   <script>
-  document.addEventListener("click", function(e) {
-    const link = e.target.closest("a");
-    if (!link) return;
+    <section class="right">
+      <h2>Карта</h2>
+      <div id="map"></div>
+    </section>
+  </main>
 
-    const allowed = "https://project-root-production-6a2f.up.railway.app/";
-
-    try {
-      const url = new URL(link.href);
-
-      // Если ссылка ведёт НЕ на твой Railway — блокируем
-      if (!url.host.includes(allowed)) {
-        e.preventDefault();
-        alert("Переход вне кабинета запрещён");
-      }
-    } catch (err) {
-      // На случай относительных ссылок — они разрешены
-    }
-  });
-</script>
-  <script>
-  function sendHeight() {
-    const height = document.body.scrollHeight;
-    parent.postMessage({ frameHeight: height }, "*");
-  }
-
-  // отправляем высоту при загрузке
-  window.onload = sendHeight;
-
-  // отправляем высоту при изменениях
-  setInterval(sendHeight, 500);
-</script>
-  <script>
-  // Блокируем правый клик
-  document.addEventListener("contextmenu", function(e) {
-    e.preventDefault();
-  });
-
-  // Блокируем выделение текста
-  document.addEventListener("selectstart", function(e) {
-    e.preventDefault();
-  });
-
-  // Блокируем копирование
-  document.addEventListener("copy", function(e) {
-    e.preventDefault();
-  });
-
-  // Блокируем Ctrl+S, Ctrl+U, Ctrl+Shift+I, F12
-  document.addEventListener("keydown", function(e) {
-    if (
-      (e.ctrlKey && e.key === "s") ||
-      (e.ctrlKey && e.key === "u") ||
-      (e.ctrlKey && e.shiftKey && e.key === "I") ||
-      e.key === "F12"
-    ) {
-      e.preventDefault();
-    }
-  });
-</script>
+  <script src="app.js"></script>
 </body>
 </html>
