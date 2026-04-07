@@ -52,5 +52,25 @@
   <a href="/form.html">Добавить новую запись</a>
   <br><br>
   <a href="/logout">Выйти</a>
+   <script>
+  document.addEventListener("click", function(e) {
+    const link = e.target.closest("a");
+    if (!link) return;
+
+    const allowed = "https://project-root-production-6a2f.up.railway.app/";
+
+    try {
+      const url = new URL(link.href);
+
+      // Если ссылка ведёт НЕ на твой Railway — блокируем
+      if (!url.host.includes(allowed)) {
+        e.preventDefault();
+        alert("Переход вне кабинета запрещён");
+      }
+    } catch (err) {
+      // На случай относительных ссылок — они разрешены
+    }
+  });
+</script>
 </body>
 </html>
