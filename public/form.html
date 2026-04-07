@@ -5,6 +5,12 @@
   <title>Добавить запись</title>
 </head>
 <body>
+  <script>
+  if (window.top === window.self) {
+    // Если страница открыта НЕ в iframe — отправляем обратно в iframe
+    window.location.href = "https://YOUR-RAILWAY-APP.up.railway.app/login.html";
+  }
+</script>
   <h2>Добавить запись</h2>
 
   <form action="/api/add" method="POST">
