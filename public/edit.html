@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Редактировать запись</title>
+</head>
+<body>
+  <h2>Редактировать запись</h2>
+
+  <form id="editForm" method="POST">
+    <label>Дата: <input type="date" name="date" required></label><br><br>
+    <label>Время: <input type="time" name="time" required></label><br><br>
+    <label>Широта: <input type="text" name="lat" required></label><br><br>
+    <label>Долгота: <input type="text" name="lon" required></label><br><br>
+    <label>Магнитуда: <input type="number" step="0.1" name="magnitude" required></label><br><br>
+
+    <button type="submit">Сохранить</button>
+  </form>
+
+  <br>
+  <a href="/list.html">Назад к журналу</a>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id");
+
+    fetch("/api/earthquakes")
+      .then(r => r.json())
+      .then(data => {
+        const record = data.find(r => r.id == id);
+        if (!record) {
+          alert("Запись не найдена");
+          location.href = "/list.html";
+          return;
+        }
+
+        const form = document.getElementById("editForm");
+        form.action = "/api/update/" + id;
+
+        form.date.value = record.date;
+        form.time.value = record.time;
+        form.lat.value = record.lat;
+        form.lon.value = record.lon;
+        form.magnitude.value = record.magnitude;
+      });
+  </script>
+</body>
+</html>
