@@ -67,14 +67,20 @@ function checkAuth(req, res, next) {
 // -------------------------
 app.post("/auth", (req, res) => {
   const { login, password } = req.body;
+  const users = JSON.parse(fs.readFileSync(path.join(__dirname, "data", "users.json")));
 
-  if (login === "admin" && password === "12345") {
-    req.session.loggedIn = true;
-    addLog("login", { user: login });
-    return res.redirect("/list.html");
+  const user = users.find(u => u.login === login && u.password === password);
+
+  if (!user) {
+    return res.redirect("/login.html?error=1");
   }
 
-  res.redirect("/login.html?error=1");
+  req.session.loggedIn = true;
+  req.session.user = user;
+
+  addLog("login", { user: login });
+
+  res.redirect("/list.html");
 });
 
 app.get("/logout", (req, res) => {
