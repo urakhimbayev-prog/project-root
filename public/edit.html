@@ -70,5 +70,17 @@
     }
   });
 </script>
+  <script>
+  function sendHeight() {
+    const height = document.body.scrollHeight;
+    parent.postMessage({ frameHeight: height }, "*");
+  }
+
+  // отправляем высоту при загрузке
+  window.onload = sendHeight;
+
+  // отправляем высоту при изменениях
+  setInterval(sendHeight, 500);
+</script>
 </body>
 </html>
