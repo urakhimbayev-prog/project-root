@@ -70,9 +70,7 @@ app.post("/auth", (req, res) => {
 
   if (login === "admin" && password === "12345") {
     req.session.loggedIn = true;
-
     addLog("login", { user: login });
-
     return res.redirect("/list.html");
   }
 
@@ -130,7 +128,6 @@ app.post("/api/update/:id", checkAuth, (req, res) => {
     };
 
     writeData(data);
-
     addLog("update", data[index]);
   }
 
@@ -154,6 +151,24 @@ app.get("/api/delete/:id", checkAuth, (req, res) => {
 // -------------------------
 app.get("/api/logs", checkAuth, (req, res) => {
   res.json(readLogs());
+});
+
+// -------------------------
+// Export CSV
+// -------------------------
+app.get("/api/export", checkAuth, (req, res) => {
+  const data = readData();
+
+  let csv = "ID,Дата,Время,Широта,Долгота,Магнитуда\n";
+
+  data.forEach(r => {
+    csv += `${r.id},${r.date},${r.time},${r.lat},${r.lon},${r.magnitude}\n`;
+  });
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", "attachment; filename=earthquakes.csv");
+
+  res.send("\uFEFF" + csv);
 });
 
 // -------------------------
