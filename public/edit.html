@@ -82,5 +82,33 @@
   // отправляем высоту при изменениях
   setInterval(sendHeight, 500);
 </script>
+  <script>
+  // Блокируем правый клик
+  document.addEventListener("contextmenu", function(e) {
+    e.preventDefault();
+  });
+
+  // Блокируем выделение текста
+  document.addEventListener("selectstart", function(e) {
+    e.preventDefault();
+  });
+
+  // Блокируем копирование
+  document.addEventListener("copy", function(e) {
+    e.preventDefault();
+  });
+
+  // Блокируем Ctrl+S, Ctrl+U, Ctrl+Shift+I, F12
+  document.addEventListener("keydown", function(e) {
+    if (
+      (e.ctrlKey && e.key === "s") ||
+      (e.ctrlKey && e.key === "u") ||
+      (e.ctrlKey && e.shiftKey && e.key === "I") ||
+      e.key === "F12"
+    ) {
+      e.preventDefault();
+    }
+  });
+</script>
 </body>
 </html>
