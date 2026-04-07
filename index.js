@@ -20,16 +20,11 @@ app.use(cookieSession({
 app.use(express.static(path.join(__dirname, "public")));
 
 const dataFile = path.join(__dirname, "data", "earthquakes.json");
+const logFile = path.join(__dirname, "data", "logs.json");
 
-// Middleware: проверка авторизации
-function checkAuth(req, res, next) {
-  if (!req.session.loggedIn) {
-    return res.redirect("/login.html");
-  }
-  next();
-}
-
-// Чтение/запись JSON
+// -------------------------
+// JSON helpers
+// -------------------------
 function readData() {
   return JSON.parse(fs.readFileSync(dataFile));
 }
@@ -38,12 +33,46 @@ function writeData(data) {
   fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
 }
 
-// Авторизация
+function readLogs() {
+  return JSON.parse(fs.readFileSync(logFile));
+}
+
+function writeLogs(data) {
+  fs.writeFileSync(logFile, JSON.stringify(data, null, 2));
+}
+
+function addLog(action, details) {
+  const logs = readLogs();
+  logs.push({
+    id: Date.now(),
+    time: new Date().toISOString(),
+    action,
+    details
+  });
+  writeLogs(logs);
+}
+
+// -------------------------
+// Auth middleware
+// -------------------------
+function checkAuth(req, res, next) {
+  if (!req.session.loggedIn) {
+    return res.redirect("/login.html");
+  }
+  next();
+}
+
+// -------------------------
+// Auth routes
+// -------------------------
 app.post("/auth", (req, res) => {
   const { login, password } = req.body;
 
   if (login === "admin" && password === "12345") {
     req.session.loggedIn = true;
+
+    addLog("login", { user: login });
+
     return res.redirect("/list.html");
   }
 
@@ -55,7 +84,9 @@ app.get("/logout", (req, res) => {
   res.redirect("/login.html");
 });
 
-// API защищаем
+// -------------------------
+// Earthquake API
+// -------------------------
 app.get("/api/earthquakes", checkAuth, (req, res) => {
   res.json(readData());
 });
@@ -64,16 +95,20 @@ app.post("/api/add", checkAuth, (req, res) => {
   const { date, time, lat, lon, magnitude } = req.body;
   const data = readData();
 
-  data.push({
+  const record = {
     id: Date.now(),
     date,
     time,
     lat: parseFloat(lat),
     lon: parseFloat(lon),
     magnitude: parseFloat(magnitude)
-  });
+  };
 
+  data.push(record);
   writeData(data);
+
+  addLog("add", record);
+
   res.redirect("/list.html");
 });
 
@@ -93,7 +128,10 @@ app.post("/api/update/:id", checkAuth, (req, res) => {
       lon: parseFloat(lon),
       magnitude: parseFloat(magnitude)
     };
+
     writeData(data);
+
+    addLog("update", data[index]);
   }
 
   res.redirect("/list.html");
@@ -106,13 +144,27 @@ app.get("/api/delete/:id", checkAuth, (req, res) => {
   data = data.filter(r => r.id !== id);
   writeData(data);
 
+  addLog("delete", { id });
+
   res.redirect("/list.html");
 });
 
-// Главная → журнал
+// -------------------------
+// Logs API
+// -------------------------
+app.get("/api/logs", checkAuth, (req, res) => {
+  res.json(readLogs());
+});
+
+// -------------------------
+// Root redirect
+// -------------------------
 app.get("/", checkAuth, (req, res) => {
   res.redirect("/list.html");
 });
 
+// -------------------------
+// Start server
+// -------------------------
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log("Server running on port", port));
