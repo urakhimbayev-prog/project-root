@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Вход</title>
+</head>
+<body>
+  <h2>Авторизация</h2>
+
+  <form action="/auth" method="POST">
+    <label>Логин: <input type="text" name="login" required></label><br><br>
+    <label>Пароль: <input type="password" name="password" required></label><br><br>
+
+    <button type="submit">Войти</button>
+  </form>
+
+  <p style="color:red;">
+    <script>
+      if (location.search.includes("error=1")) {
+        document.write("Неверный логин или пароль");
+      }
+    </script>
+  </p>
+</body>
+</html>
