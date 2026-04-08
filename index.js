@@ -32,22 +32,26 @@ app.use(express.static(path.join(__dirname, "public")));
 // -------------------------
 // File paths
 // -------------------------
-const dataFile = path.join(__dirname, "data", "earthquakes.json");
-const logFile = path.join(__dirname, "data", "logs.json");
-const usersFile = path.join(__dirname, "data", "users.json");
+const dataFile = "/app/data/earthquakes.json";
+const logFile = "/app/data/logs.json";
+const usersFile = "/app/data/users.json";
 
-// -------------------------
-// Ensure files exist (fix ENOENT)
-// -------------------------
-function ensureFile(filePath, defaultContent) {
-  if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, JSON.stringify(defaultContent, null, 2));
-  }
+// Initialize data files on startup
+function initializeDataFiles() {
+  const files = [
+    { path: dataFile, name: "earthquakes.json" },
+    { path: logFile, name: "logs.json" },
+    { path: usersFile, name: "users.json" }
+  ];
+
+  files.forEach(file => {
+    if (!fs.existsSync(file.path)) {
+      fs.writeFileSync(file.path, JSON.stringify([]));
+      console.log(`Initialized ${file.name}`);
+    }
+  });
 }
 
-ensureFile(dataFile, []);
-ensureFile(logFile, []);
-ensureFile(usersFile, []);
 
 // -------------------------
 // JSON helpers
@@ -245,6 +249,8 @@ app.get("/", (req, res) => {
 // Start server
 // -------------------------
 const port = process.env.PORT || 3000;
+initializeDataFiles();
+
 app.listen(port, () =>
   console.log("Server running on port", port)
 );
