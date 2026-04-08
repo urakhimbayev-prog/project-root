@@ -19,8 +19,8 @@ app.use(
     name: "session",
     keys: ["supersecretkey123"],
     maxAge: 24 * 60 * 60 * 1000,
-    secure: true,       // обязательно для HTTPS (Railway)
-    sameSite: "none"    // обязательно для iframe (Тильда)
+    secure: true,
+    sameSite: "none"
   })
 );
 
@@ -35,6 +35,19 @@ app.use(express.static(path.join(__dirname, "public")));
 const dataFile = path.join(__dirname, "data", "earthquakes.json");
 const logFile = path.join(__dirname, "data", "logs.json");
 const usersFile = path.join(__dirname, "data", "users.json");
+
+// -------------------------
+// Ensure files exist (fix ENOENT)
+// -------------------------
+function ensureFile(filePath, defaultContent) {
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, JSON.stringify(defaultContent, null, 2));
+  }
+}
+
+ensureFile(dataFile, []);
+ensureFile(logFile, []);
+ensureFile(usersFile, []);
 
 // -------------------------
 // JSON helpers
@@ -122,19 +135,16 @@ app.get("/api/earthquakes", checkAuth, (req, res) => {
   let data = readData();
   const now = Date.now();
 
-  // Date range filter
   const range = req.query.range;
   if (range === "24h") data = data.filter(r => now - r.id <= 24 * 60 * 60 * 1000);
   if (range === "7d")  data = data.filter(r => now - r.id <= 7 * 24 * 60 * 60 * 1000);
   if (range === "30d") data = data.filter(r => now - r.id <= 30 * 24 * 60 * 60 * 1000);
 
-  // Magnitude filter
   const minMag = parseFloat(req.query.minMag);
   if (!isNaN(minMag)) {
     data = data.filter(r => r.magnitude >= minMag);
   }
 
-  // Sort newest first
   data = data.sort((a, b) => b.id - a.id);
 
   res.json(data);
@@ -209,19 +219,16 @@ app.get("/api/earthquakes-public", (req, res) => {
   let data = readData();
   const now = Date.now();
 
-  // Date range filter
   const range = req.query.range;
   if (range === "24h") data = data.filter(r => now - r.id <= 24 * 60 * 60 * 1000);
   if (range === "7d")  data = data.filter(r => now - r.id <= 7 * 24 * 60 * 60 * 1000);
   if (range === "30d") data = data.filter(r => now - r.id <= 30 * 24 * 60 * 60 * 1000);
 
-  // Magnitude filter
   const minMag = parseFloat(req.query.minMag);
   if (!isNaN(minMag)) {
     data = data.filter(r => r.magnitude >= minMag);
   }
 
-  // Sort newest first
   data = data.sort((a, b) => b.id - a.id);
 
   res.json(data);
