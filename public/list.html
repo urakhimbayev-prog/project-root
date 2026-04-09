@@ -1,94 +1,43 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Журнал сейсмособытий</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <meta charset="UTF-8">
+  <title>Кабинет оператора</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
-  <header class="top-bar">
-    <h1>Журнал сейсмособытий</h1>
-    <div>
-      <a href="/api/export" class="btn">Экспорт CSV</a>
-      <a href="/logout" class="btn btn-outline">Выход</a>
-    </div>
-  </header>
 
-  <main class="layout">
+<h2>События</h2>
 
-    <section class="left">
-      <h2>Добавить событие</h2>
+<select id="range" onchange="applyFilters()">
+  <option value="">Все</option>
+  <option value="24h">24 часа</option>
+  <option value="7d">7 дней</option>
+  <option value="30d">30 дней</option>
+</select>
 
-      <form method="POST" action="/api/add" class="form-grid">
-        <label>Дата</label>
-        <input type="date" name="date" required />
+<input id="minMag" type="number" step="0.1" placeholder="Мин. магнитуда" onchange="applyFilters()">
 
-        <label>Время</label>
-        <input type="time" name="time" required />
+<table border="1">
+  <thead>
+    <tr>
+      <th>Дата</th>
+      <th>Время</th>
+      <th>Магнитуда</th>
+      <th>Широта</th>
+      <th>Долгота</th>
+      <th>Комментарий</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="table-body"></tbody>
+</table>
 
-        <label>Магнитуда</label>
-        <input type="number" step="0.1" name="magnitude" required />
+<h2>Карта</h2>
+<div id="map" style="height: 500px;"></div>
 
-        <label>Широта</label>
-        <input type="number" step="0.0001" name="lat" required />
+<script src="app.js"></script>
 
-        <label>Долгота</label>
-        <input type="number" step="0.0001" name="lon" required />
-
-        <label>Комментарий</label>
-        <textarea name="comment" rows="2"></textarea>
-
-        <button type="submit" class="btn full">Сохранить</button>
-      </form>
-
-      <h2>Фильтры</h2>
-
-      <div class="filters">
-        <select id="range">
-          <option value="">Все события</option>
-          <option value="24h">Последние 24 часа</option>
-          <option value="7d">Последние 7 дней</option>
-          <option value="30d">Последние 30 дней</option>
-        </select>
-
-        <select id="minMag">
-          <option value="">Все магнитуды</option>
-          <option value="2">M ≥ 2</option>
-          <option value="3">M ≥ 3</option>
-          <option value="4">M ≥ 4</option>
-          <option value="5">M ≥ 5</option>
-        </select>
-
-        <button class="btn" onclick="applyFilters()">Фильтровать</button>
-      </div>
-
-      <h2>Список событий</h2>
-
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Дата</th>
-            <th>Время</th>
-            <th>M</th>
-            <th>Широта</th>
-            <th>Долгота</th>
-            <th>Комментарий</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="table-body"></tbody>
-      </table>
-    </section>
-
-    <section class="right">
-      <h2>Карта</h2>
-      <div id="map"></div>
-    </section>
-
-  </main>
-
-  <script src="app.js"></script>
 </body>
 </html>
