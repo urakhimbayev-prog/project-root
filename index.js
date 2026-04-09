@@ -197,7 +197,8 @@ app.post("/api/add", checkAuth, (req, res) => {
 
   addLog("add", record);
 
-  res.redirect("/list.html");
+  res.json({ ok: true, id: record.id });
+
 });
 
 // UPDATE
@@ -223,7 +224,8 @@ app.post("/api/update/:id", checkAuth, (req, res) => {
     addLog("update", data[index]);
   }
 
-  res.redirect("/list.html");
+  res.json({ ok: true, id: id });
+
 });
 
 // DELETE
@@ -236,7 +238,8 @@ app.get("/api/delete/:id", checkAuth, (req, res) => {
 
   addLog("delete", { id });
 
-  res.redirect("/list.html");
+  res.json({ ok: true, id: id });
+
 });
 
 // -------------------------
