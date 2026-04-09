@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // -------------------------
-// Cookie session (iframe + HTTPS fix)
+// Cookie session
 // -------------------------
 app.use(
   cookieSession({
@@ -37,7 +37,7 @@ const logFile = path.join(__dirname, "data", "logs.json");
 const usersFile = path.join(__dirname, "data", "users.json");
 
 // -------------------------
-// Ensure files exist (fix ENOENT)
+// Ensure files exist
 // -------------------------
 function ensureFile(filePath, defaultContent) {
   if (!fs.existsSync(filePath)) {
@@ -48,6 +48,32 @@ function ensureFile(filePath, defaultContent) {
 ensureFile(dataFile, []);
 ensureFile(logFile, []);
 ensureFile(usersFile, []);
+
+// -------------------------
+// Auto-create default users
+// -------------------------
+function ensureDefaultUsers() {
+  try {
+    const users = JSON.parse(fs.readFileSync(usersFile));
+    if (!Array.isArray(users) || users.length === 0) {
+      const defaultUsers = [
+        { login: "admin", password: "12345", role: "admin" },
+        { login: "operator", password: "op123", role: "operator" }
+      ];
+      fs.writeFileSync(usersFile, JSON.stringify(defaultUsers, null, 2));
+      console.log("Default users created (Volume was empty)");
+    }
+  } catch (e) {
+    console.log("Error reading users.json, recreating...");
+    const defaultUsers = [
+      { login: "admin", password: "12345", role: "admin" },
+      { login: "operator", password: "op123", role: "operator" }
+    ];
+    fs.writeFileSync(usersFile, JSON.stringify(defaultUsers, null, 2));
+  }
+}
+
+ensureDefaultUsers();
 
 // -------------------------
 // JSON helpers
@@ -94,7 +120,7 @@ function checkAuth(req, res, next) {
 }
 
 // -------------------------
-// Allow login.html without auth
+// Login page
 // -------------------------
 app.get("/login.html", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
@@ -213,7 +239,7 @@ app.get("/api/delete/:id", checkAuth, (req, res) => {
 });
 
 // -------------------------
-// PUBLIC API (no auth)
+// PUBLIC API
 // -------------------------
 app.get("/api/earthquakes-public", (req, res) => {
   let data = readData();
