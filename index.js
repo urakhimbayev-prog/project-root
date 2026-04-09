@@ -1,14 +1,15 @@
 import express from "express";
 import fs from "fs";
 import path from "path";
-import cookieSession from "cookie-session";
 import cors from "cors";
+import jwt from "jsonwebtoken";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const SECRET = "supersecretjwtkey123";
 
 app.use(cors({
   origin: true,
@@ -17,18 +18,6 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-app.use(
-  cookieSession({
-    name: "session",
-    keys: ["supersecretkey123"],
-    maxAge: 24 * 60 * 60 * 1000,
-    secure: true,
-    sameSite: "none",
-    httpOnly: false
-  })
-);
-
 app.use(express.static(path.join(__dirname, "public")));
 
 const dataFile = path.join(__dirname, "data", "earthquakes.json");
@@ -50,15 +39,15 @@ function ensureDefaultUsers() {
     const users = JSON.parse(fs.readFileSync(usersFile));
     if (!Array.isArray(users) || users.length === 0) {
       const defaultUsers = [
-        { login: "admin", password: "12345", role: "admin" },
-        { login: "operator", password: "op123", role: "operator" }
+        { login: "admin", password: "12345" },
+        { login: "operator", password: "op123" }
       ];
       fs.writeFileSync(usersFile, JSON.stringify(defaultUsers, null, 2));
     }
   } catch {
     const defaultUsers = [
-      { login: "admin", password: "12345", role: "admin" },
-      { login: "operator", password: "op123", role: "operator" }
+      { login: "admin", password: "12345" },
+      { login: "operator", password: "op123" }
     ];
     fs.writeFileSync(usersFile, JSON.stringify(defaultUsers, null, 2));
   }
@@ -74,16 +63,16 @@ function writeData(data) {
   fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
 }
 
+function readUsers() {
+  return JSON.parse(fs.readFileSync(usersFile));
+}
+
 function readLogs() {
   return JSON.parse(fs.readFileSync(logFile));
 }
 
 function writeLogs(data) {
   fs.writeFileSync(logFile, JSON.stringify(data, null, 2));
-}
-
-function readUsers() {
-  return JSON.parse(fs.readFileSync(usersFile));
 }
 
 function addLog(action, details) {
@@ -98,53 +87,35 @@ function addLog(action, details) {
 }
 
 function checkAuth(req, res, next) {
-  if (!req.session.loggedIn) {
+  const token = req.headers.authorization?.split(" ")[1];
+
+  if (!token) return res.status(401).json({ ok: false, error: "unauthorized" });
+
+  try {
+    req.user = jwt.verify(token, SECRET);
+    next();
+  } catch {
     return res.status(401).json({ ok: false, error: "unauthorized" });
   }
-  next();
 }
 
 app.post("/auth", (req, res) => {
   const { login, password } = req.body;
   const users = readUsers();
 
-  const user = users.find(
-    (u) => u.login === login && u.password === password
-  );
+  const user = users.find(u => u.login === login && u.password === password);
 
   if (!user) {
     return res.json({ ok: false, error: "invalid_credentials" });
   }
 
-  req.session.loggedIn = true;
-  req.session.user = user;
+  const token = jwt.sign({ login: user.login }, SECRET, { expiresIn: "7d" });
 
-  addLog("login", { user: login });
-
-  res.json({ ok: true });
-});
-
-app.get("/logout", (req, res) => {
-  req.session = null;
-  res.json({ ok: true });
+  res.json({ ok: true, token });
 });
 
 app.get("/api/earthquakes", checkAuth, (req, res) => {
   let data = readData();
-  const now = Date.now();
-
-  const range = req.query.range;
-  if (range === "24h") data = data.filter(r => now - r.id <= 24 * 60 * 60 * 1000);
-  if (range === "7d")  data = data.filter(r => now - r.id <= 7 * 24 * 60 * 60 * 1000);
-  if (range === "30d") data = data.filter(r => now - r.id <= 30 * 24 * 60 * 60 * 1000);
-
-  const minMag = parseFloat(req.query.minMag);
-  if (!isNaN(minMag)) {
-    data = data.filter(r => r.magnitude >= minMag);
-  }
-
-  data = data.sort((a, b) => b.id - a.id);
-
   res.json({ ok: true, data });
 });
 
@@ -172,29 +143,17 @@ app.post("/api/add", checkAuth, (req, res) => {
 
 app.post("/api/update/:id", checkAuth, (req, res) => {
   const id = Number(req.params.id);
-  const { date, time, lat, lon, magnitude, comment } = req.body;
-
   const data = readData();
-  const index = data.findIndex((r) => r.id === id);
+  const index = data.findIndex(r => r.id === id);
 
-  if (index !== -1) {
-    data[index] = {
-      id,
-      date,
-      time,
-      lat: parseFloat(lat),
-      lon: parseFloat(lon),
-      magnitude: parseFloat(magnitude),
-      comment: comment || ""
-    };
+  if (index === -1) return res.json({ ok: false });
 
-    writeData(data);
-    addLog("update", data[index]);
+  data[index] = { ...data[index], ...req.body };
+  writeData(data);
 
-    return res.json({ ok: true, record: data[index] });
-  }
+  addLog("update", data[index]);
 
-  res.json({ ok: false, error: "not_found" });
+  res.json({ ok: true, record: data[index] });
 });
 
 app.get("/api/delete/:id", checkAuth, (req, res) => {
@@ -206,14 +165,8 @@ app.get("/api/delete/:id", checkAuth, (req, res) => {
 
   addLog("delete", { id });
 
-  res.json({ ok: true, id });
-});
-
-app.get("/", (req, res) => {
-  res.redirect("/login.html");
+  res.json({ ok: true });
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () =>
-  console.log("Server running on port", port)
-);
+app.listen(port, () => console.log("Server running on port", port));
