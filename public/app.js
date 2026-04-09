@@ -43,7 +43,7 @@ function renderTable(data) {
       <td>${r.lat}</td>
       <td>${r.lon}</td>
       <td>${r.comment}</td>
-      <td><button class="link-danger" onclick="deleteRecord(${r.id})">Удалить</button></td>
+      <td><button onclick="deleteRecord(${r.id})">Удалить</button></td>
     `;
     tbody.appendChild(tr);
   });
