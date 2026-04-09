@@ -1,31 +1,40 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Вход | Сейсмология</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>Вход</title>
 </head>
-<body class="login-page">
-  <div class="login-box">
-    <h1>Вход в систему</h1>
-    <form method="POST" action="/auth">
-      <label>Логин</label>
-      <input type="text" name="login" required />
+<body>
 
-      <label>Пароль</label>
-      <input type="password" name="password" required />
+<h2>Вход в систему</h2>
 
-      <button type="submit">Войти</button>
-    </form>
+<form onsubmit="login(event)">
+  <input name="login" placeholder="Логин" required><br>
+  <input name="password" type="password" placeholder="Пароль" required><br>
+  <button type="submit">Войти</button>
+</form>
 
-    <div class="error" id="error"></div>
-  </div>
+<script>
+async function login(event) {
+  event.preventDefault();
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("error") === "1") {
-      document.getElementById("error").textContent = "Неверный логин или пароль";
-    }
-  </script>
+  const form = new FormData(event.target);
+
+  const res = await fetch("/auth", {
+    method: "POST",
+    credentials: "include",
+    body: form
+  });
+
+  const json = await res.json();
+
+  if (json.ok) {
+    window.location.href = "/list.html";
+  } else {
+    alert("Неверный логин или пароль");
+  }
+}
+</script>
+
 </body>
 </html>
