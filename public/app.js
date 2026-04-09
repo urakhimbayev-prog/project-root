@@ -1,8 +1,13 @@
 async function loadData() {
-  const res = await fetch("/api/earthquakes");
-  const data = await res.json();
-  renderTable(data);
-  updateMap(data);
+  const res = await fetch("/api/earthquakes", {
+    credentials: "include"
+  });
+
+  const json = await res.json();
+  if (!json.ok) return alert("Ошибка авторизации");
+
+  renderTable(json.data);
+  updateMap(json.data);
 }
 
 async function applyFilters() {
@@ -14,11 +19,15 @@ async function applyFilters() {
   if (range) url += `range=${range}&`;
   if (minMag) url += `minMag=${minMag}`;
 
-  const res = await fetch(url);
-  const data = await res.json();
+  const res = await fetch(url, {
+    credentials: "include"
+  });
 
-  renderTable(data);
-  updateMap(data);
+  const json = await res.json();
+  if (!json.ok) return alert("Ошибка авторизации");
+
+  renderTable(json.data);
+  updateMap(json.data);
 }
 
 function renderTable(data) {
@@ -34,10 +43,22 @@ function renderTable(data) {
       <td>${r.lat}</td>
       <td>${r.lon}</td>
       <td>${r.comment}</td>
-      <td><a href="/api/delete/${r.id}" class="link-danger">Удалить</a></td>
+      <td><button class="link-danger" onclick="deleteRecord(${r.id})">Удалить</button></td>
     `;
     tbody.appendChild(tr);
   });
+}
+
+async function deleteRecord(id) {
+  const res = await fetch(`/api/delete/${id}`, {
+    method: "GET",
+    credentials: "include"
+  });
+
+  const json = await res.json();
+  if (!json.ok) return alert("Ошибка авторизации");
+
+  loadData();
 }
 
 let map;
