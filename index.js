@@ -270,6 +270,64 @@ app.get("/api/earthquakes-public", (req, res) => {
 });
 
 // -------------------------
+// Admin page route
+// -------------------------
+app.get("/admin.html", checkAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
+// -------------------------
+// Admin API
+// -------------------------
+const adminFiles = {
+  earthquakes: dataFile,
+  logs: logFile,
+  users: usersFile
+};
+
+// GET /api/admin/:type — return file contents
+app.get("/api/admin/:type", checkAuth, (req, res) => {
+  const filePath = adminFiles[req.params.type];
+  if (!filePath) return res.status(404).json({ error: "Unknown file type" });
+  try {
+    const data = JSON.parse(fs.readFileSync(filePath));
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to read file: " + err.message });
+  }
+});
+
+// POST /api/admin/:type — save file contents
+app.post("/api/admin/:type", checkAuth, (req, res) => {
+  const filePath = adminFiles[req.params.type];
+  if (!filePath) return res.status(404).json({ error: "Unknown file type" });
+  const body = req.body;
+  if (!Array.isArray(body) && typeof body !== "object") {
+    return res.status(400).json({ error: "Body must be a JSON array or object" });
+  }
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(body, null, 2));
+    addLog("admin_save", { type: req.params.type, user: req.session.user?.login });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to write file: " + err.message });
+  }
+});
+
+// POST /api/admin/clear/:type — reset file to empty array
+app.post("/api/admin/clear/:type", checkAuth, (req, res) => {
+  const filePath = adminFiles[req.params.type];
+  if (!filePath) return res.status(404).json({ error: "Unknown file type" });
+  try {
+    fs.writeFileSync(filePath, JSON.stringify([], null, 2));
+    addLog("admin_clear", { type: req.params.type, user: req.session.user?.login });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to clear file: " + err.message });
+  }
+});
+
+// -------------------------
 // Root route
 // -------------------------
 app.get("/", (req, res) => {

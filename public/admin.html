@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .admin-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #d9e1e8;
+    }
+
+    .tab-btn {
+      padding: 8px 20px;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 600;
+      color: #555;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      border-radius: 4px 4px 0 0;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab-btn:hover {
+      color: #005bbb;
+    }
+
+    .tab-btn.active {
+      color: #005bbb;
+      border-bottom-color: #005bbb;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .panel-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .panel-card h2 {
+      margin-top: 0;
+      font-size: 17px;
+      color: #1e1e1e;
+    }
+
+    .json-area {
+      width: 100%;
+      min-height: 320px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 13px;
+      padding: 10px;
+      border: 1px solid #d9e1e8;
+      border-radius: 4px;
+      resize: vertical;
+      background: #f9fafb;
+      box-sizing: border-box;
+      color: #1e1e1e;
+    }
+
+    .json-area:focus {
+      outline: none;
+      border-color: #005bbb;
+      background: #fff;
+    }
+
+    .json-area[readonly] {
+      background: #f3f4f6;
+      color: #555;
+      cursor: default;
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-admin {
+      padding: 7px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn-admin:hover {
+      opacity: 0.85;
+    }
+
+    .btn-edit {
+      background: #005bbb;
+      color: #fff;
+    }
+
+    .btn-save {
+      background: #1a9e5c;
+      color: #fff;
+      display: none;
+    }
+
+    .btn-cancel {
+      background: #e5e7eb;
+      color: #333;
+      display: none;
+    }
+
+    .btn-delete {
+      background: #d64545;
+      color: #fff;
+      margin-left: auto;
+    }
+
+    .status-msg {
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .status-msg.success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-msg.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .record-count {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header class="top-bar">
+    <h1>Admin Panel</h1>
+    <div>
+      <a href="/list.html" class="btn btn-outline">Back to App</a>
+      <a href="/logout" class="btn">Logout</a>
+    </div>
+  </header>
+
+  <div class="admin-container">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('earthquakes')">Earthquakes</button>
+      <button class="tab-btn" onclick="switchTab('logs')">Logs</button>
+      <button class="tab-btn" onclick="switchTab('users')">Users</button>
+    </div>
+
+    <!-- Earthquakes -->
+    <div id="tab-earthquakes" class="tab-panel active">
+      <div class="panel-card">
+        <h2>earthquakes.json</h2>
+        <div class="record-count" id="count-earthquakes"></div>
+        <textarea class="json-area" id="area-earthquakes" readonly></textarea>
+        <div class="action-bar">
+          <button class="btn-admin btn-edit" onclick="enableEdit('earthquakes')">Edit</button>
+          <button class="btn-admin btn-save" id="save-earthquakes" onclick="saveFile('earthquakes')">Save</button>
+          <button class="btn-admin btn-cancel" id="cancel-earthquakes" onclick="cancelEdit('earthquakes')">Cancel</button>
+          <span class="status-msg" id="status-earthquakes"></span>
+          <button class="btn-admin btn-delete" onclick="clearFile('earthquakes')">Delete All</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logs -->
+    <div id="tab-logs" class="tab-panel">
+      <div class="panel-card">
+        <h2>logs.json</h2>
+        <div class="record-count" id="count-logs"></div>
+        <textarea class="json-area" id="area-logs" readonly></textarea>
+        <div class="action-bar">
+          <button class="btn-admin btn-edit" onclick="enableEdit('logs')">Edit</button>
+          <button class="btn-admin btn-save" id="save-logs" onclick="saveFile('logs')">Save</button>
+          <button class="btn-admin btn-cancel" id="cancel-logs" onclick="cancelEdit('logs')">Cancel</button>
+          <span class="status-msg" id="status-logs"></span>
+          <button class="btn-admin btn-delete" onclick="clearFile('logs')">Delete All</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div id="tab-users" class="tab-panel">
+      <div class="panel-card">
+        <h2>users.json</h2>
+        <div class="record-count" id="count-users"></div>
+        <textarea class="json-area" id="area-users" readonly></textarea>
+        <div class="action-bar">
+          <button class="btn-admin btn-edit" onclick="enableEdit('users')">Edit</button>
+          <button class="btn-admin btn-save" id="save-users" onclick="saveFile('users')">Save</button>
+          <button class="btn-admin btn-cancel" id="cancel-users" onclick="cancelEdit('users')">Cancel</button>
+          <span class="status-msg" id="status-users"></span>
+          <button class="btn-admin btn-delete" onclick="clearFile('users')">Delete All</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const types = ['earthquakes', 'logs', 'users'];
+    const originalContent = {};
+
+    // ── Tab switching ──────────────────────────────────────────────
+    function switchTab(type) {
+      types.forEach(t => {
+        document.getElementById('tab-' + t).classList.remove('active');
+        document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+          if (btn.textContent.toLowerCase() === t) btn.classList.remove('active');
+        });
+      });
+      document.getElementById('tab-' + type).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.textContent.toLowerCase() === type) btn.classList.add('active');
+      });
+      loadFile(type);
+    }
+
+    // ── Load file content from API ─────────────────────────────────
+    async function loadFile(type) {
+      const area = document.getElementById('area-' + type);
+      const countEl = document.getElementById('count-' + type);
+      try {
+        const res = await fetch('/api/admin/' + type);
+        if (res.status === 401 || res.redirected) {
+          window.location.href = '/login.html';
+          return;
+        }
+        const data = await res.json();
+        const formatted = JSON.stringify(data, null, 2);
+        area.value = formatted;
+        originalContent[type] = formatted;
+        const count = Array.isArray(data) ? data.length : Object.keys(data).length;
+        countEl.textContent = count + ' record' + (count !== 1 ? 's' : '');
+      } catch (err) {
+        area.value = '// Failed to load: ' + err.message;
+        countEl.textContent = '';
+      }
+    }
+
+    // ── Enable editing ─────────────────────────────────────────────
+    function enableEdit(type) {
+      const area = document.getElementById('area-' + type);
+      area.removeAttribute('readonly');
+      area.focus();
+      document.getElementById('save-' + type).style.display = 'inline-block';
+      document.getElementById('cancel-' + type).style.display = 'inline-block';
+      area.closest('.panel-card').querySelector('.btn-edit').style.display = 'none';
+      hideStatus(type);
+    }
+
+    // ── Cancel editing ─────────────────────────────────────────────
+    function cancelEdit(type) {
+      const area = document.getElementById('area-' + type);
+      area.value = originalContent[type] || '';
+      area.setAttribute('readonly', true);
+      document.getElementById('save-' + type).style.display = 'none';
+      document.getElementById('cancel-' + type).style.display = 'none';
+      area.closest('.panel-card').querySelector('.btn-edit').style.display = 'inline-block';
+      hideStatus(type);
+    }
+
+    // ── Save file via API ──────────────────────────────────────────
+    async function saveFile(type) {
+      const area = document.getElementById('area-' + type);
+      let parsed;
+      try {
+        parsed = JSON.parse(area.value);
+      } catch (e) {
+        showStatus(type, 'Invalid JSON: ' + e.message, 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/' + type, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(parsed)
+        });
+        if (res.status === 401 || res.redirected) {
+          window.location.href = '/login.html';
+          return;
+        }
+        const result = await res.json();
+        if (!res.ok) {
+          showStatus(type, result.error || 'Save failed', 'error');
+          return;
+        }
+        const formatted = JSON.stringify(parsed, null, 2);
+        area.value = formatted;
+        originalContent[type] = formatted;
+        area.setAttribute('readonly', true);
+        document.getElementById('save-' + type).style.display = 'none';
+        document.getElementById('cancel-' + type).style.display = 'none';
+        area.closest('.panel-card').querySelector('.btn-edit').style.display = 'inline-block';
+        const count = Array.isArray(parsed) ? parsed.length : Object.keys(parsed).length;
+        document.getElementById('count-' + type).textContent = count + ' record' + (count !== 1 ? 's' : '');
+        showStatus(type, 'Saved successfully', 'success');
+      } catch (err) {
+        showStatus(type, 'Request failed: ' + err.message, 'error');
+      }
+    }
+
+    // ── Clear file via API ─────────────────────────────────────────
+    async function clearFile(type) {
+      if (!confirm('Delete all records in ' + type + '.json? This cannot be undone.')) return;
+      try {
+        const res = await fetch('/api/admin/clear/' + type, { method: 'POST' });
+        if (res.status === 401 || res.redirected) {
+          window.location.href = '/login.html';
+          return;
+        }
+        const result = await res.json();
+        if (!res.ok) {
+          showStatus(type, result.error || 'Clear failed', 'error');
+          return;
+        }
+        const formatted = '[]';
+        document.getElementById('area-' + type).value = formatted;
+        originalContent[type] = formatted;
+        document.getElementById('count-' + type).textContent = '0 records';
+        cancelEdit(type);
+        showStatus(type, 'All records deleted', 'success');
+      } catch (err) {
+        showStatus(type, 'Request failed: ' + err.message, 'error');
+      }
+    }
+
+    // ── Status helpers ─────────────────────────────────────────────
+    function showStatus(type, msg, kind) {
+      const el = document.getElementById('status-' + type);
+      el.textContent = msg;
+      el.className = 'status-msg ' + kind;
+      el.style.display = 'inline-block';
+      if (kind === 'success') {
+        setTimeout(() => hideStatus(type), 3000);
+      }
+    }
+
+    function hideStatus(type) {
+      const el = document.getElementById('status-' + type);
+      el.style.display = 'none';
+      el.textContent = '';
+    }
+
+    // ── Bootstrap: load the default tab ───────────────────────────
+    loadFile('earthquakes');
+  </script>
+</body>
+</html>
