@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // -------------------------
-// Cookie session
+// Cookie session (фикс: httpOnly: false)
 // -------------------------
 app.use(
   cookieSession({
@@ -20,7 +20,8 @@ app.use(
     keys: ["supersecretkey123"],
     maxAge: 24 * 60 * 60 * 1000,
     secure: true,
-    sameSite: "none"
+    sameSite: "none",
+    httpOnly: false
   })
 );
 
@@ -61,10 +62,9 @@ function ensureDefaultUsers() {
         { login: "operator", password: "op123", role: "operator" }
       ];
       fs.writeFileSync(usersFile, JSON.stringify(defaultUsers, null, 2));
-      console.log("Default users created (Volume was empty)");
+      console.log("Default users created");
     }
-  } catch (e) {
-    console.log("Error reading users.json, recreating...");
+  } catch {
     const defaultUsers = [
       { login: "admin", password: "12345", role: "admin" },
       { login: "operator", password: "op123", role: "operator" }
