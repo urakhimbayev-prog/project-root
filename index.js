@@ -2,6 +2,7 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 import cookieSession from "cookie-session";
+import cors from "cors";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -9,12 +10,19 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// -------------------------
+// CORS (обязательно для iframe)
+// -------------------------
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // -------------------------
-// FIX: Cookie session for iframe
+// Cookie session (фикс для iframe)
 // -------------------------
 app.use(
   cookieSession({
@@ -115,7 +123,7 @@ function addLog(action, details) {
 // -------------------------
 function checkAuth(req, res, next) {
   if (!req.session.loggedIn) {
-    return res.redirect("/login.html");
+    return res.status(401).json({ ok: false, error: "unauthorized" });
   }
   next();
 }
@@ -139,7 +147,7 @@ app.post("/auth", (req, res) => {
   );
 
   if (!user) {
-    return res.redirect("/login.html?error=1");
+    return res.json({ ok: false, error: "invalid_credentials" });
   }
 
   req.session.loggedIn = true;
@@ -147,12 +155,12 @@ app.post("/auth", (req, res) => {
 
   addLog("login", { user: login });
 
-  res.redirect("/list.html");
+  res.json({ ok: true });
 });
 
 app.get("/logout", (req, res) => {
   req.session = null;
-  res.redirect("/login.html");
+  res.json({ ok: true });
 });
 
 // -------------------------
@@ -174,7 +182,7 @@ app.get("/api/earthquakes", checkAuth, (req, res) => {
 
   data = data.sort((a, b) => b.id - a.id);
 
-  res.json(data);
+  res.json({ ok: true, data });
 });
 
 // ADD
@@ -197,8 +205,7 @@ app.post("/api/add", checkAuth, (req, res) => {
 
   addLog("add", record);
 
-  res.json({ ok: true, id: record.id });
-
+  res.json({ ok: true, record });
 });
 
 // UPDATE
@@ -222,10 +229,11 @@ app.post("/api/update/:id", checkAuth, (req, res) => {
 
     writeData(data);
     addLog("update", data[index]);
+
+    return res.json({ ok: true, record: data[index] });
   }
 
-  res.json({ ok: true, id: id });
-
+  res.json({ ok: false, error: "not_found" });
 });
 
 // DELETE
@@ -238,8 +246,7 @@ app.get("/api/delete/:id", checkAuth, (req, res) => {
 
   addLog("delete", { id });
 
-  res.json({ ok: true, id: id });
-
+  res.json({ ok: true, id });
 });
 
 // -------------------------
@@ -261,65 +268,7 @@ app.get("/api/earthquakes-public", (req, res) => {
 
   data = data.sort((a, b) => b.id - a.id);
 
-  res.json(data);
-});
-
-// -------------------------
-// Admin page route
-// -------------------------
-app.get("/admin.html", checkAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
-});
-
-// -------------------------
-// Admin API
-// -------------------------
-const adminFiles = {
-  earthquakes: dataFile,
-  logs: logFile,
-  users: usersFile
-};
-
-// GET /api/admin/:type — return file contents
-app.get("/api/admin/:type", checkAuth, (req, res) => {
-  const filePath = adminFiles[req.params.type];
-  if (!filePath) return res.status(404).json({ error: "Unknown file type" });
-  try {
-    const data = JSON.parse(fs.readFileSync(filePath));
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to read file: " + err.message });
-  }
-});
-
-// POST /api/admin/:type — save file contents
-app.post("/api/admin/:type", checkAuth, (req, res) => {
-  const filePath = adminFiles[req.params.type];
-  if (!filePath) return res.status(404).json({ error: "Unknown file type" });
-  const body = req.body;
-  if (!Array.isArray(body) && typeof body !== "object") {
-    return res.status(400).json({ error: "Body must be a JSON array or object" });
-  }
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(body, null, 2));
-    addLog("admin_save", { type: req.params.type, user: req.session.user?.login });
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to write file: " + err.message });
-  }
-});
-
-// POST /api/admin/clear/:type — reset file to empty array
-app.post("/api/admin/clear/:type", checkAuth, (req, res) => {
-  const filePath = adminFiles[req.params.type];
-  if (!filePath) return res.status(404).json({ error: "Unknown file type" });
-  try {
-    fs.writeFileSync(filePath, JSON.stringify([], null, 2));
-    addLog("admin_clear", { type: req.params.type, user: req.session.user?.login });
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to clear file: " + err.message });
-  }
+  res.json({ ok: true, data });
 });
 
 // -------------------------
